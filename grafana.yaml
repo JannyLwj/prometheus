@@ -1,0 +1,56 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: monitoring-grafana
+  namespace: kube-ops
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        k8s-app: grafana
+        task: monitoring
+    spec:
+      containers:
+      - name: grafana
+        image: registry.cn-shanghai.aliyuncs.com/grafana_cluster/grafana:latest
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: ca-certificates
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        env:
+        - name: INFLUXDB_HOST
+          value: monitoring-influxdb
+        - name: GF_INSTALL_PLUGINS
+          value: grafana-kubernetes-app, grafana-clock-panel, briangann-gauge-panel, michaeldmoore-annunciator-panel, jdbranham-diagram-panel, grafana-piechart-panel, grafana-worldmap-panel, vonage-status-panel
+      volumes:
+      - name: ca-certificates
+        hostPath:
+          path: /etc/ssl/certs
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    kubernetes.io/cluster-service: 'true'
+    kubernetes.io/name: grafana
+  name: monitoring-grafana
+  namespace: kube-ops
+spec:
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: LoadBalancer
+  selector:
+    k8s-app: grafana

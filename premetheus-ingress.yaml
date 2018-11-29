@@ -1,0 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: traefik-default-ingress
+  namespace: kube-ops
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:  
+  rules:
+  - host: "*.prometheus.cfd1afbd5543c44c58397f5d17a601026.cn-shanghai.alicontainer.com"
+    http:
+      paths:
+      - backend:
+          serviceName: prometheus-srv
+          servicePort: 9090
+        path: /
