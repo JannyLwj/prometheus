@@ -1,0 +1,64 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: monitoring-grafana
+  namespace: kube-ops  
+spec:
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s-app: grafana
+        task: monitoring
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:5.3.4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: admin
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: admin321
+        - name: GF_INSTALL_PLUGINS
+          value: grafana-kubernetes-app
+        readinessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /api/health
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 30
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/health
+            port: 3000
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        volumeMounts:
+        - name: ca-certificates
+          mountPath: /etc/ssl/certs
+          readOnly: true
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+      volumes:
+      - name: ca-certificates
+        hostPath:
+          path: /etc/ssl/certs
